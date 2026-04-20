@@ -71,10 +71,8 @@ Necesitas tres credenciales de tu aplicación en Azure:
 
 ## Permisos requeridos en Azure
 
-| Permiso | Módulo |
-|---|---|
-| Mail.Read | EmailClient |
-| Mail.ReadWrite | EmailClient |
-| Files.Read.All | DriveClient |
-| Files.ReadWrite.All | DriveClient |
-| User.Read.All | GraphClient |
+| Permiso | Módulo | Para qué sirve |
+|---|---|---|
+| Mail.Read | EmailClient | Leer correos de cualquier buzón |
+| Files.Read.All | DriveClient | Leer archivos de OneDrive/SharePoint |
+| User.Read.All | GraphClient | Listar usuarios de la organización |
