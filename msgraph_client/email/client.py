@@ -45,9 +45,10 @@ class EmailClient:
             safe = from_address.replace("'", "''")
             filters.append(f"from/emailAddress/address eq '{safe}'")
 
-        endpoint = f"users/{self.mailbox}/mailFolders/inbox/messages?$top={limit}&$orderby=receivedDateTime DESC"
         if filters:
-            endpoint += "&$filter=" + " and ".join(filters)
+            endpoint = f"users/{self.mailbox}/mailFolders/inbox/messages?$top={limit}&$filter=" + " and ".join(filters)
+        else:
+            endpoint = f"users/{self.mailbox}/mailFolders/inbox/messages?$top={limit}&$orderby=receivedDateTime DESC"
 
         data = self.client.get(endpoint)
         raw_emails = data.get("value", [])
