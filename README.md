@@ -70,12 +70,15 @@ filas = drive_client.read_rows("Sheet1", limit=10, path="Reportes/ventas.xlsx")
 ```
 
 ## Estructura del paquete
+
+\```
 msgraph_client/
 ├── auth/       → autenticación y cliente HTTP
 ├── email/      → lectura de correos
 ├── drive/      → lectura de archivos OneDrive/SharePoint
 ├── models/     → clases Email, Attachment, FileObject
 └── utils/      → utilidades internas
+\```
 
 ## Permisos requeridos en Azure
 
