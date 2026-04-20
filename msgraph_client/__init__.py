@@ -3,6 +3,7 @@ from msgraph_client.auth.client import GraphClient
 from msgraph_client.email.client import EmailClient
 from msgraph_client.drive.client import DriveClient
 from msgraph_client.models import Email, Attachment, FileObject
+from msgraph_client.utils import setup_logging
 
 __version__ = "0.1.0"
 
@@ -14,4 +15,5 @@ __all__ = [
     "Email",
     "Attachment",
     "FileObject",
+    "setup_logging",
 ]
