@@ -16,9 +16,9 @@ Necesitas tres credenciales de tu aplicación en Azure:
 
 ## Uso básico
 
-### Correos
+### Autenticación
 
-    from msgraph_client import GraphAuth, GraphClient, EmailClient
+    from msgraph_client import GraphAuth, GraphClient
 
     auth = GraphAuth(
         client_id="tu-client-id",
@@ -26,39 +26,130 @@ Necesitas tres credenciales de tu aplicación en Azure:
         tenant_id="tu-tenant-id"
     )
     client = GraphClient(auth)
+
+### Logging
+
+    from msgraph_client.utils import setup_logging
+
+    setup_logging("DEBUG")    # ver todo
+    setup_logging("INFO")     # ver info general
+    setup_logging("WARNING")  # ver solo advertencias
+    setup_logging("ERROR")    # ver solo errores
+
+## EmailClient
+
+    from msgraph_client import EmailClient
+
     email_client = EmailClient(client, mailbox="usuario@empresa.com")
 
-    # Obtener correos no leídos
-    emails = email_client.get_new_emails(only_unread=True)
-    for email in emails:
-        print(email.subject, email.from_address)
+### get_new_emails()
 
-    # Polling cada 60 segundos
+Obtiene correos de la bandeja de entrada.
+
+    emails = email_client.get_new_emails(
+        only_unread=True,           # solo no leídos (default: True)
+        from_address="x@gmail.com", # filtrar por remitente (opcional)
+        subject_contains="Reporte", # filtrar por asunto (opcional)
+        include_attachments=True,   # incluir adjuntos (default: False)
+        limit=10                    # cantidad máxima (default: 10)
+    )
+
+    for email in emails:
+        print(email.id)
+        print(email.subject)
+        print(email.from_address)
+        print(email.to)
+        print(email.body)
+        print(email.received_at)
+        for att in email.attachments:
+            print(att.filename)
+            print(att.content_type)
+            print(att.content_bytes)  # base64
+
+### start_polling()
+
+Revisa correos nuevos cada cierto tiempo y llama a un callback por cada uno.
+
     def procesar(email):
         print(f"Nuevo correo: {email.subject}")
 
-    email_client.start_polling(callback=procesar, poll_interval=60)
-
-### Archivos Excel en OneDrive
-
-    from msgraph_client import GraphAuth, GraphClient, DriveClient
-
-    auth = GraphAuth(
-        client_id="tu-client-id",
-        client_secret="tu-client-secret",
-        tenant_id="tu-tenant-id"
+    email_client.start_polling(
+        callback=procesar,
+        poll_interval=60  # segundos entre cada revisión
     )
-    client = GraphClient(auth)
+
+## DriveClient
+
+    from msgraph_client import DriveClient
+
     drive_client = DriveClient(client, user_email="usuario@empresa.com")
 
-    # Leer hoja completa
-    rows = drive_client.read_sheet("Sheet1", path="Reportes/ventas.xlsx")
+### get_file()
 
-    # Leer columna específica
-    precios = drive_client.read_column("Sheet1", column="Precio", path="Reportes/ventas.xlsx")
+Obtiene metadata de un archivo por su ID.
 
-    # Leer primeras 10 filas
-    filas = drive_client.read_rows("Sheet1", limit=10, path="Reportes/ventas.xlsx")
+    file = drive_client.get_file("01SVOVJV53SKD2EOOHHZDIIVMZHIP2ZHZA")
+    print(file.id)
+    print(file.name)
+    print(file.size)
+    print(file.mime_type)
+    print(file.path)
+    print(file.drive_id)
+
+### get_file_by_path()
+
+Obtiene metadata de un archivo por su ruta.
+
+    file = drive_client.get_file_by_path("Reportes/ventas.xlsx")
+
+### read_sheet()
+
+Lee una hoja completa de un archivo Excel.
+
+    # Con encabezado (devuelve nombres de columnas)
+    rows = drive_client.read_sheet(
+        "Sheet1",
+        path="Reportes/ventas.xlsx",
+        has_header=True  # default: True
+    )
+    # Resultado: [{"col1": "valor1", "col2": "valor2"}]
+
+    # Sin encabezado (devuelve letras A, B, C...)
+    rows = drive_client.read_sheet(
+        "Sheet1",
+        path="Reportes/ventas.xlsx",
+        has_header=False
+    )
+    # Resultado: [{"A": "valor1", "B": "valor2"}]
+
+### read_column()
+
+Lee una columna específica de una hoja Excel.
+
+    # Por nombre de columna (si has_header=True)
+    valores = drive_client.read_column(
+        "Sheet1",
+        column="Precio",
+        path="Reportes/ventas.xlsx"
+    )
+
+    # Por letra (si has_header=False)
+    valores = drive_client.read_column(
+        "Sheet1",
+        column="A",
+        path="Reportes/ventas.xlsx",
+        has_header=False
+    )
+
+### read_rows()
+
+Lee las primeras N filas de una hoja Excel.
+
+    filas = drive_client.read_rows(
+        "Sheet1",
+        limit=10,
+        path="Reportes/ventas.xlsx"
+    )
 
 ## Estructura del paquete
 
