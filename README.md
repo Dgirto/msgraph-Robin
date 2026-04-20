@@ -76,3 +76,5 @@ Necesitas tres credenciales de tu aplicación en Azure:
 | Mail.Read | EmailClient |
 | Mail.ReadWrite | EmailClient |
 | Files.Read.All | DriveClient |
+| Files.ReadWrite.All | DriveClient |
+| User.Read.All | GraphClient |
