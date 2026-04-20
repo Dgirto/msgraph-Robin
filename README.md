@@ -29,12 +29,17 @@ Necesitas tres credenciales de tu aplicación en Azure:
 
 ### Logging
 
+Configura el nivel de detalle de los logs. Llámalo una sola vez al inicio de tu script.
+
     from msgraph_client.utils import setup_logging
 
-    setup_logging("DEBUG")    # ver todo
-    setup_logging("INFO")     # ver info general
-    setup_logging("WARNING")  # ver solo advertencias
-    setup_logging("ERROR")    # ver solo errores
+    setup_logging("INFO")  # opciones: DEBUG, INFO, WARNING, ERROR
+
+Niveles disponibles:
+- DEBUG: muestra todo, cada request y token. Útil para desarrollo.
+- INFO: muestra autenticaciones y acciones importantes.
+- WARNING: muestra solo cuando algo falla pero se recupera.
+- ERROR: muestra solo errores graves. Recomendado para producción.
 
 ## EmailClient
 
