@@ -251,9 +251,23 @@ Crea una carpeta en OneDrive. Si ya existe, no hace nada.
 
     teams = TeamsClient(client)
 
+### send_webhook_message()
+
+Envía un mensaje a un canal via Incoming Webhook. No requiere permisos de Azure.
+
+Para obtener la URL del webhook: Canal de Teams → ... → Conectores → Incoming Webhook → Configurar
+
+    teams.send_webhook_message(
+        webhook_url="https://xxx.webhook.office.com/...",
+        message="✅ El proceso terminó.",
+        title="Robin AI",    # opcional
+        color="FF363A"       # opcional
+    )
+
 ### send_message_by_name()
 
 Envía un mensaje a un canal buscando por nombre, sin necesitar IDs.
+Requiere permiso delegado: ChannelMessage.Send
 
     teams.send_message_by_name(
         team_name="Operaciones",
@@ -275,6 +289,7 @@ Envía un mensaje a un canal usando IDs directamente.
 ### send_direct_message()
 
 Envía un mensaje directo (1 a 1) a un usuario de Teams.
+Requiere permiso: Chat.ReadWrite.All
 
     teams.send_direct_message(
         user_email="dorian@empresa.com",
@@ -299,15 +314,47 @@ Lista equipos y canales de la organización.
     equipos = teams.list_teams()
     canales = teams.list_channels(team_id="...")
 
-### get_messages()
+### get_channel_messages()
 
 Lee los mensajes más recientes de un canal.
+Requiere permiso: ChannelMessage.Read.All
 
-    mensajes = teams.get_messages(
+    mensajes = teams.get_channel_messages(
         team_id="...",
         channel_id="...",
         limit=10
     )
+    for m in mensajes:
+        print(m["body"]["content"])
+
+### get_chat_messages()
+
+Lee los chats recientes de un usuario.
+Requiere permiso: Chat.ReadWrite.All
+
+    chats = teams.get_chat_messages(user_email="dorian@empresa.com", limit=10)
+
+### create_meeting()
+
+Crea una reunión de Teams y devuelve el link para unirse.
+Requiere permiso: OnlineMeetings.ReadWrite.All
+
+    from datetime import datetime, timezone, timedelta
+
+    reunion = teams.create_meeting(
+        user_email="dorian@empresa.com",
+        subject="Demo Robin AI",
+        start=datetime.now(timezone.utc) + timedelta(hours=1),
+        end=datetime.now(timezone.utc) + timedelta(hours=2),
+        attendees=["cliente@empresa.com"]  # opcional
+    )
+    print(reunion["joinWebUrl"])  # link para unirse
+
+### list_meetings() / get_meeting() / cancel_meeting()
+
+    reuniones = teams.list_meetings(user_email="dorian@empresa.com")
+    reunion   = teams.get_meeting(user_email="dorian@empresa.com", meeting_id="...")
+    teams.cancel_meeting(user_email="dorian@empresa.com", meeting_id="...")
 
 ## WebhookManager
 
@@ -399,7 +446,7 @@ Suscribe a notificaciones de mensajes nuevos en un canal de Teams.
     ├── auth/       autenticación y cliente HTTP
     ├── email/      lectura y envío de correos
     ├── drive/      lectura y escritura en OneDrive/SharePoint
-    ├── teams/      mensajes en canales y chats de Teams
+    ├── teams/      mensajes, reuniones e integración con Teams
     ├── webhooks/   notificaciones push (reemplaza polling)
     ├── models/     clases Email, Attachment, FileObject
     └── utils/      utilidades internas
@@ -414,6 +461,7 @@ Suscribe a notificaciones de mensajes nuevos en un canal de Teams.
 | Files.ReadWrite.All | DriveWriter | Escribir archivos en OneDrive/SharePoint |
 | Team.ReadBasic.All | TeamsClient | Listar equipos de la organización |
 | Channel.ReadBasic.All | TeamsClient | Listar canales de un equipo |
-| ChannelMessage.Send | TeamsClient | Enviar mensajes a canales |
-| Chat.ReadWrite.All | TeamsClient | Enviar mensajes directos (1 a 1) |
+| ChannelMessage.Read.All | TeamsClient | Leer mensajes de canales |
+| Chat.ReadWrite.All | TeamsClient | Mensajes directos y leer chats |
+| OnlineMeetings.ReadWrite.All | TeamsClient | Crear y cancelar reuniones de Teams |
 | User.Read.All | GraphClient | Listar usuarios de la organización |
