@@ -229,7 +229,7 @@ class DriveWriter:
 
         self.client.auth._authenticate()
         headers = {
-            "Authorization": f"Bearer {self.client.auth.token}",
+            "Authorization": f"Bearer {self.client.auth.access_token}",
             "Content-Type": "application/octet-stream",
         }
         response = requests.put(url, headers=headers, data=file_bytes)
