@@ -1,168 +1,419 @@
-# Módulos nuevos — Extensiones Fase 2
+# msgraph-client
 
-Agrega esto al README.md existente, reemplazando la sección 9 (Futuras extensiones).
+Librería Python para integración con Microsoft Graph API.
+Permite leer y enviar correos, leer y escribir archivos en OneDrive, enviar mensajes a Teams y recibir notificaciones push.
 
----
+## Instalación
 
-## Módulos disponibles
+    pip install git+https://github.com/Dgirto/msgraph-Robin.git
 
-| Módulo | Clase | Descripción |
-|---|---|---|
-| `email_reader.py` | `EmailReader` | Lectura de correos desde Outlook/Exchange |
-| `email_sender.py` | `EmailSender` | Envío de correos con CC, BCC y adjuntos |
-| `onedrive_reader.py` | `OneDriveReader` | Lectura de archivos y Excel desde OneDrive/SharePoint |
-| `onedrive_writer.py` | `OneDriveWriter` | Escritura y actualización de Excel en OneDrive |
-| `teams_client.py` | `TeamsClient` | Envío de mensajes a canales y chats de Teams |
-| `webhook_manager.py` | `WebhookManager` | Notificaciones push (reemplaza polling) |
+## Configuración
 
----
+Necesitas tres credenciales de tu aplicación en Azure:
+- `client_id`
+- `client_secret`
+- `tenant_id`
+
+## Uso básico
+
+### Autenticación
+
+    from msgraph_client import GraphAuth, GraphClient
+
+    auth = GraphAuth(
+        client_id="tu-client-id",
+        client_secret="tu-client-secret",
+        tenant_id="tu-tenant-id"
+    )
+    client = GraphClient(auth)
+
+### Logging
+
+Configura el nivel de detalle de los logs. Llámalo una sola vez al inicio de tu script.
+
+    from msgraph_client.utils import setup_logging
+
+    setup_logging("INFO")  # opciones: DEBUG, INFO, WARNING, ERROR
+
+Niveles disponibles:
+- DEBUG: muestra todo, cada request y token. Útil para desarrollo.
+- INFO: muestra autenticaciones y acciones importantes.
+- WARNING: muestra solo cuando algo falla pero se recupera.
+- ERROR: muestra solo errores graves. Recomendado para producción.
+
+## EmailClient
+
+    from msgraph_client import EmailClient
+
+    email_client = EmailClient(client, mailbox="usuario@empresa.com")
+
+### get_new_emails()
+
+Obtiene correos de la bandeja de entrada.
+
+    emails = email_client.get_new_emails(
+        only_unread=True,           # solo no leídos (default: True)
+        from_address="x@gmail.com", # filtrar por remitente (opcional)
+        subject_contains="Reporte", # filtrar por asunto (opcional)
+        include_attachments=True,   # incluir adjuntos (default: False)
+        limit=10                    # cantidad máxima (default: 10)
+    )
+
+    for email in emails:
+        print(email.id)
+        print(email.subject)
+        print(email.from_address)
+        print(email.to)
+        print(email.body)
+        print(email.received_at)
+        for att in email.attachments:
+            print(att.filename)
+            print(att.content_type)
+            print(att.content_bytes)  # base64
+
+### start_polling()
+
+Revisa correos nuevos cada cierto tiempo y llama a un callback por cada uno.
+
+    def procesar(email):
+        print(f"Nuevo correo: {email.subject}")
+
+    email_client.start_polling(
+        callback=procesar,
+        poll_interval=60  # segundos entre cada revisión
+    )
+
+## EmailSender
+
+    from msgraph_client import EmailSender
+
+    sender = EmailSender(client, mailbox="robot@empresa.com")
+
+### send()
+
+Envía un correo electrónico.
+
+    sender.send(
+        to=["destino@empresa.com"],
+        subject="Reporte listo",
+        body="<p>El reporte está disponible ✅</p>",
+        body_type="HTML",           # "HTML" o "Text" (default: "HTML")
+        cc=["jefe@empresa.com"],    # copia (opcional)
+        bcc=["otro@empresa.com"],   # copia oculta (opcional)
+        save_to_sent=True           # guardar en Enviados (default: True)
+    )
+
+### send_with_attachment()
+
+Envía un correo con un archivo adjunto.
+
+    with open("reporte.xlsx", "rb") as f:
+        sender.send_with_attachment(
+            to=["destino@empresa.com"],
+            subject="Reporte",
+            body="<p>Adjunto el reporte.</p>",
+            filename="reporte.xlsx",
+            file_bytes=f.read(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+## DriveClient
+
+    from msgraph_client import DriveClient
+
+    drive_client = DriveClient(client, user_email="usuario@empresa.com")
+
+### get_file()
+
+Obtiene metadata de un archivo por su ID.
+
+    file = drive_client.get_file("01SVOVJV53SKD2EOOHHZDIIVMZHIP2ZHZA")
+    print(file.id)
+    print(file.name)
+    print(file.size)
+    print(file.mime_type)
+    print(file.path)
+    print(file.drive_id)
+
+### get_file_by_path()
+
+Obtiene metadata de un archivo por su ruta.
+
+    file = drive_client.get_file_by_path("Reportes/ventas.xlsx")
+
+### read_sheet()
+
+Lee una hoja completa de un archivo Excel.
+
+    # Con encabezado (devuelve nombres de columnas)
+    rows = drive_client.read_sheet(
+        "Sheet1",
+        path="Reportes/ventas.xlsx",
+        has_header=True  # default: True
+    )
+    # Resultado: [{"col1": "valor1", "col2": "valor2"}]
+
+    # Sin encabezado (devuelve letras A, B, C...)
+    rows = drive_client.read_sheet(
+        "Sheet1",
+        path="Reportes/ventas.xlsx",
+        has_header=False
+    )
+    # Resultado: [{"A": "valor1", "B": "valor2"}]
+
+### read_column()
+
+Lee una columna específica de una hoja Excel.
+
+    # Por nombre de columna (si has_header=True)
+    valores = drive_client.read_column(
+        "Sheet1",
+        column="Precio",
+        path="Reportes/ventas.xlsx"
+    )
+
+    # Por letra (si has_header=False)
+    valores = drive_client.read_column(
+        "Sheet1",
+        column="A",
+        path="Reportes/ventas.xlsx",
+        has_header=False
+    )
+
+### read_rows()
+
+Lee las primeras N filas de una hoja Excel.
+
+    filas = drive_client.read_rows(
+        "Sheet1",
+        limit=10,
+        path="Reportes/ventas.xlsx"
+    )
+
+## DriveWriter
+
+    from msgraph_client import DriveWriter
+
+    writer = DriveWriter(client, user_email="usuario@empresa.com")
+
+### upload_sheet()
+
+Convierte una lista de dicts en Excel y lo sube a OneDrive. Si el archivo existe, lo reemplaza.
+
+    writer.upload_sheet(
+        path="Reportes/ventas.xlsx",
+        data=[{"Producto": "A", "Ventas": 100}, {"Producto": "B", "Ventas": 200}],
+        sheet_name="Mayo"
+    )
+
+### upload_dataframe()
+
+Sube un DataFrame de pandas como Excel a OneDrive.
+
+    import pandas as pd
+
+    df = pd.DataFrame({"Producto": ["A", "B"], "Ventas": [100, 200]})
+    writer.upload_dataframe(
+        path="Reportes/ventas.xlsx",
+        df=df,
+        sheet_name="Mayo"
+    )
+
+### append_rows()
+
+Descarga un Excel existente, agrega filas al final y lo vuelve a subir.
+
+    writer.append_rows(
+        path="Reportes/ventas.xlsx",
+        data=[{"Producto": "C", "Ventas": 300}],
+        sheet_name="Mayo"
+    )
+
+### update_sheet()
+
+Reemplaza el contenido de una hoja específica manteniendo las demás hojas intactas.
+
+    writer.update_sheet(
+        path="Reportes/ventas.xlsx",
+        data=[{"Producto": "A", "Ventas": 999}],
+        sheet_name="Mayo"
+    )
+
+### create_folder()
+
+Crea una carpeta en OneDrive. Si ya existe, no hace nada.
+
+    writer.create_folder("Reportes/2025")
+
+## TeamsClient
+
+    from msgraph_client import TeamsClient
+
+    teams = TeamsClient(client)
+
+### send_message_by_name()
+
+Envía un mensaje a un canal buscando por nombre, sin necesitar IDs.
+
+    teams.send_message_by_name(
+        team_name="Operaciones",
+        channel_name="General",
+        message="✅ El proceso terminó correctamente."
+    )
+
+### send_message()
+
+Envía un mensaje a un canal usando IDs directamente.
+
+    teams.send_message(
+        team_id="...",
+        channel_id="...",
+        message="Hola desde la librería",
+        message_type="text"  # "text" o "html"
+    )
+
+### send_direct_message()
+
+Envía un mensaje directo (1 a 1) a un usuario de Teams.
+
+    teams.send_direct_message(
+        user_email="dorian@empresa.com",
+        message="Reporte subido a OneDrive ✅"
+    )
+
+### reply_to_message()
+
+Responde a un mensaje existente en un canal.
+
+    teams.reply_to_message(
+        team_id="...",
+        channel_id="...",
+        message_id="...",
+        reply="Recibido ✅"
+    )
+
+### list_teams() / list_channels()
+
+Lista equipos y canales de la organización.
+
+    equipos = teams.list_teams()
+    canales = teams.list_channels(team_id="...")
+
+### get_messages()
+
+Lee los mensajes más recientes de un canal.
+
+    mensajes = teams.get_messages(
+        team_id="...",
+        channel_id="...",
+        limit=10
+    )
+
+## WebhookManager
+
+En lugar de hacer polling ("¿hay correos nuevos?" cada X segundos), Graph API avisa a tu endpoint cuando ocurre algo.
+
+    from msgraph_client import WebhookManager
+
+    manager = WebhookManager(client)
+
+### subscribe_mail()
+
+Suscribe a notificaciones de correos nuevos en un buzón.
+
+    sub = manager.subscribe_mail(
+        mailbox="robot@empresa.com",
+        notification_url="https://miapp.com/webhooks/graph",  # debe ser HTTPS público
+        secret="mi_clave_secreta_min10",
+        change_types="created",         # "created", "updated", "deleted"
+        expiration_minutes=4230         # máx 4230 (~3 días)
+    )
+    print(sub["id"])  # guardar este ID para renovar/eliminar
+
+### subscribe_onedrive()
+
+Suscribe a notificaciones de cambios en OneDrive.
+
+    sub = manager.subscribe_onedrive(
+        user_email="usuario@empresa.com",
+        notification_url="https://miapp.com/webhooks/graph",
+        secret="mi_clave_secreta_min10"
+    )
+
+### subscribe_teams_channel()
+
+Suscribe a notificaciones de mensajes nuevos en un canal de Teams.
+
+    sub = manager.subscribe_teams_channel(
+        team_id="...",
+        channel_id="...",
+        notification_url="https://miapp.com/webhooks/graph",
+        secret="mi_clave_secreta_min10"
+    )
+
+### list_subscriptions() / renew_subscription() / delete_subscription()
+
+    # Listar todas las activas
+    subs = manager.list_subscriptions()
+
+    # Renovar antes de que expire
+    manager.renew_subscription(sub["id"])
+
+    # Eliminar una
+    manager.delete_subscription(sub["id"])
+
+    # Eliminar todas
+    manager.delete_all_subscriptions()
+
+### Endpoint receptor (ejemplo Flask)
+
+    from flask import Flask, request, jsonify
+    from msgraph_client import WebhookManager
+
+    app = Flask(__name__)
+    SECRET = "mi_clave_secreta_min10"
+
+    @app.route("/webhooks/graph", methods=["POST"])
+    def recibir():
+        # Microsoft valida el endpoint con este parámetro primero
+        token = request.args.get("validationToken")
+        if token:
+            return token, 200, {"Content-Type": "text/plain"}
+
+        notifs = WebhookManager.parse_notification(request.get_data())
+        for n in notifs:
+            if not WebhookManager.validate_notification(
+                client_state=SECRET,
+                received_client_state=n.get("clientState", "")
+            ):
+                return "Unauthorized", 401
+            print(f"Notificación: {n.get('changeType')} en {n.get('resource')}")
+
+        return jsonify({}), 202
+
+    app.run(port=5000)
+
+## Estructura del paquete
+
+    msgraph_client/
+    ├── auth/       autenticación y cliente HTTP
+    ├── email/      lectura y envío de correos
+    ├── drive/      lectura y escritura en OneDrive/SharePoint
+    ├── teams/      mensajes en canales y chats de Teams
+    ├── webhooks/   notificaciones push (reemplaza polling)
+    ├── models/     clases Email, Attachment, FileObject
+    └── utils/      utilidades internas
 
 ## Permisos requeridos en Azure
 
 | Permiso | Módulo | Para qué sirve |
 |---|---|---|
-| `Mail.Read` | EmailReader | Leer correos de cualquier buzón |
-| `Mail.Send` | EmailSender | Enviar correos desde cualquier buzón |
-| `Files.Read.All` | OneDriveReader | Leer archivos de OneDrive/SharePoint |
-| `Files.ReadWrite.All` | OneDriveWriter | Escribir/subir archivos a OneDrive/SharePoint |
-| `Team.ReadBasic.All` | TeamsClient | Listar equipos de la organización |
-| `Channel.ReadBasic.All` | TeamsClient | Listar canales de un equipo |
-| `ChannelMessage.Send` | TeamsClient | Enviar mensajes a canales |
-| `Chat.ReadWrite.All` | TeamsClient | Enviar mensajes directos (1 a 1) |
-| `User.Read.All` | GraphClient | Listar usuarios de la organización |
-
----
-
-## Ejemplos de uso
-
-### Envío de correos (EmailSender)
-
-```python
-from lib.graph.graph_client import GraphClient
-from lib.graph.email_sender import EmailSender
-
-client = GraphClient()
-sender = EmailSender(client)
-
-sender.send_email(
-    from_email="robot@empresa.com",
-    to_email="destino@empresa.com",
-    subject="Reporte generado",
-    body_html="<p>El reporte está listo ✅</p>",
-    cc=["jefe@empresa.com"],
-)
-```
-
-### Escritura en Excel / OneDrive (OneDriveWriter)
-
-```python
-from lib.graph.graph_client import GraphClient
-from lib.graph.onedrive_writer import OneDriveWriter
-import pandas as pd
-
-client = GraphClient()
-writer = OneDriveWriter(client)
-
-df = pd.DataFrame({"Producto": ["A", "B"], "Ventas": [100, 200]})
-
-# Subir nuevo archivo
-writer.upload_dataframe(
-    user_email="usuario@empresa.com",
-    file_path="Reportes/ventas_mayo.xlsx",
-    df=df,
-    sheet_name="Mayo"
-)
-
-# Agregar filas a un Excel existente
-nuevas_filas = pd.DataFrame({"Producto": ["C"], "Ventas": [300]})
-writer.append_rows(
-    user_email="usuario@empresa.com",
-    file_path="Reportes/ventas_mayo.xlsx",
-    df=nuevas_filas,
-    sheet_name="Mayo"
-)
-```
-
-### Integración con Teams (TeamsClient)
-
-```python
-from lib.graph.graph_client import GraphClient
-from lib.graph.teams_client import TeamsClient
-
-client = GraphClient()
-teams = TeamsClient(client)
-
-# Enviar a canal por nombre (sin necesitar IDs)
-teams.send_channel_message_by_name(
-    team_name="Operaciones",
-    channel_name="General",
-    message="✅ El proceso terminó correctamente."
-)
-
-# Enviar mensaje directo a un usuario
-teams.send_direct_message(
-    user_email="dorian@empresa.com",
-    message="Reporte generado y subido a OneDrive."
-)
-```
-
-### Webhooks — notificaciones push (WebhookManager)
-
-```python
-from lib.graph.graph_client import GraphClient
-from lib.graph.webhook_manager import WebhookManager
-
-client = GraphClient()
-manager = WebhookManager(client)
-
-# Suscribirse a correos nuevos
-sub = manager.subscribe_mail(
-    user_email="robot@empresa.com",
-    notification_url="https://miapp.com/webhooks/graph",  # debe ser HTTPS público
-    secret="mi_clave_secreta_min10chars",
-)
-print(f"Suscripción creada: {sub['id']}")
-
-# Listar suscripciones activas
-subs = manager.list_subscriptions()
-
-# Renovar antes de que expire
-manager.renew_subscription(sub["id"])
-
-# Eliminar
-manager.delete_subscription(sub["id"])
-```
-
-#### Endpoint receptor de webhooks (ejemplo Flask)
-
-```python
-from flask import Flask, request, jsonify
-from lib.graph.webhook_manager import WebhookManager
-
-app = Flask(__name__)
-SECRET = "mi_clave_secreta_min10chars"
-
-@app.route("/webhooks/graph", methods=["POST"])
-def receive_notification():
-    # Microsoft valida el endpoint con un GET primero
-    validation_token = request.args.get("validationToken")
-    if validation_token:
-        return validation_token, 200, {"Content-Type": "text/plain"}
-
-    # Procesar notificaciones
-    notifications = WebhookManager.parse_notification(request.get_data())
-    for notif in notifications:
-        if not WebhookManager.validate_notification(
-            raw_body=request.get_data(),
-            client_state=SECRET,
-            received_client_state=notif.get("clientState", ""),
-        ):
-            return "Unauthorized", 401
-
-        resource = notif.get("resource")
-        change_type = notif.get("changeType")
-        print(f"Notificación: {change_type} en {resource}")
-        # Aquí va tu lógica de negocio
-
-    return jsonify({}), 202
-```
+| Mail.Read | EmailClient | Leer correos de cualquier buzón |
+| Mail.Send | EmailSender | Enviar correos desde cualquier buzón |
+| Files.Read.All | DriveClient | Leer archivos de OneDrive/SharePoint |
+| Files.ReadWrite.All | DriveWriter | Escribir archivos en OneDrive/SharePoint |
+| Team.ReadBasic.All | TeamsClient | Listar equipos de la organización |
+| Channel.ReadBasic.All | TeamsClient | Listar canales de un equipo |
+| ChannelMessage.Send | TeamsClient | Enviar mensajes a canales |
+| Chat.ReadWrite.All | TeamsClient | Enviar mensajes directos (1 a 1) |
+| User.Read.All | GraphClient | Listar usuarios de la organización |
