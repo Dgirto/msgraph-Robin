@@ -465,3 +465,17 @@ Suscribe a notificaciones de mensajes nuevos en un canal de Teams.
 | Chat.ReadWrite.All | TeamsClient | Mensajes directos y leer chats |
 | OnlineMeetings.ReadWrite.All | TeamsClient | Crear y cancelar reuniones de Teams |
 | User.Read.All | GraphClient | Listar usuarios de la organización |
+| Organization.Read.All | test_connection | Probar conexión (`GET /organization`) |
+
+## Conector Ruvic
+
+Este repo es el conector `msgraph` del catálogo Ruvic. Archivos de entrega:
+
+- `manifest.json` — id `msgraph`, modo `azure_app`, prefijo `RUVIC_MSGRAPH_`
+- `docs/index.html` — guía bilingüe del portal (`/catalog/msgraph`)
+- `SKILL.md` — instrucciones para el agente
+- `test_connection.py` — `GET /v1.0/organization` con las env vars `RUVIC_MSGRAPH_*`
+
+Instalación en runtime (paquete en la raíz, sin `#subdirectory=lib`):
+
+    pip install git+https://github.com/Dgirto/msgraph-Robin.git

@@ -1,0 +1,77 @@
+{
+  "id": "msgraph",
+  "name": "Microsoft 365 (Graph API)",
+  "version": "1.0.0",
+  "description": "Correo, OneDrive/Excel, Teams y webhooks vía Microsoft Graph",
+  "name_en": "Microsoft 365 (Graph API)",
+  "description_en": "Mail, OneDrive/Excel, Teams and webhooks via Microsoft Graph",
+  "category_en": "productivity",
+  "keywords": [
+    "microsoft 365",
+    "msgraph",
+    "graph",
+    "outlook",
+    "onedrive",
+    "teams",
+    "excel",
+    "sharepoint"
+  ],
+  "icon": "icon.svg",
+  "category": "productivity",
+  "library": {
+    "package": "msgraph-client",
+    "install": "pip install git+https://github.com/Dgirto/msgraph-Robin.git",
+    "import_name": "msgraph_client"
+  },
+  "auth_modes": [
+    {
+      "id": "azure_app",
+      "label": "Aplicación de Azure (client credentials)",
+      "fields": [
+        {
+          "key": "client_id",
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "help_text": "ID de la aplicación registrada en Azure AD"
+        },
+        {
+          "key": "client_secret",
+          "label": "Client Secret",
+          "type": "password",
+          "secret": true,
+          "required": true
+        },
+        {
+          "key": "tenant_id",
+          "label": "Tenant ID",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "default_mailbox",
+          "label": "Buzón por defecto",
+          "type": "text",
+          "required": false,
+          "placeholder": "robot@empresa.com",
+          "help_text": "Usado por EmailClient/EmailSender si el flujo no especifica otro"
+        }
+      ]
+    }
+  ],
+  "env_prefix": "RUVIC_MSGRAPH_",
+  "operations": [
+    "email.read",
+    "email.send",
+    "drive.read",
+    "drive.write",
+    "teams.message",
+    "teams.meeting",
+    "webhooks.subscribe"
+  ],
+  "test_connection": true,
+  "docs": {
+    "skill": "SKILL.md",
+    "permissions_note": "Requiere permisos de Graph API en Azure: Mail.Read, Mail.Send, Files.ReadWrite.All, Chat.ReadWrite.All, etc. según los módulos a usar"
+  }
+}

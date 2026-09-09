@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 280" width="720" height="280" role="img">
+  <rect width="720" height="280" fill="#FDF2E1"/>
+  <rect x="24" y="24" width="200" height="232" rx="8" fill="#101630"/>
+  <text x="44" y="64" fill="#F2AF5E" font-family="system-ui,sans-serif" font-size="15" font-weight="700">Azure / Entra ID</text>
+  <text x="44" y="96" fill="#FDF2E1" font-family="IBM Plex Mono,monospace" font-size="13">App registration</text>
+  <text x="44" y="124" fill="#FDF2E1" font-family="IBM Plex Mono,monospace" font-size="13">client_id</text>
+  <text x="44" y="148" fill="#FDF2E1" font-family="IBM Plex Mono,monospace" font-size="13">tenant_id</text>
+  <text x="44" y="172" fill="#FDF2E1" font-family="IBM Plex Mono,monospace" font-size="13">client_secret</text>
+  <text x="44" y="212" fill="#FDF2E1" font-family="system-ui,sans-serif" font-size="12">Application permissions</text>
+  <text x="44" y="232" fill="#FDF2E1" font-family="system-ui,sans-serif" font-size="12">+ admin consent</text>
+  <path d="M236 140 H 316" stroke="#FF363A" stroke-width="3" fill="none"/>
+  <polygon points="316,132 336,140 316,148" fill="#FF363A"/>
+  <rect x="348" y="24" width="160" height="232" rx="8" fill="#1a2344"/>
+  <text x="368" y="64" fill="#F2AF5E" font-family="system-ui,sans-serif" font-size="15" font-weight="700">Ruvic</text>
+  <text x="368" y="96" fill="#FDF2E1" font-family="system-ui,sans-serif" font-size="13">Settings ’ Conectores</text>
+  <text x="368" y="132" fill="#FDF2E1" font-family="IBM Plex Mono,monospace" font-size="12">RUVIC_MSGRAPH_*</text>
+  <text x="368" y="168" fill="#FDF2E1" font-family="system-ui,sans-serif" font-size="13">Probar conexión</text>
+  <text x="368" y="204" fill="#FDF2E1" font-family="IBM Plex Mono,monospace" font-size="12">GET /organization</text>
+  <path d="M520 140 H 600" stroke="#FF363A" stroke-width="3" fill="none"/>
+  <polygon points="600,132 620,140 600,148" fill="#FF363A"/>
+  <rect x="632" y="24" width="64" height="232" rx="8" fill="#101630"/>
+  <text x="644" y="120" fill="#F2AF5E" font-family="system-ui,sans-serif" font-size="12" font-weight="700">Graph</text>
+  <text x="644" y="148" fill="#FDF2E1" font-family="system-ui,sans-serif" font-size="11">Mail</text>
+  <text x="644" y="168" fill="#FDF2E1" font-family="system-ui,sans-serif" font-size="11">Drive</text>
+  <text x="644" y="188" fill="#FDF2E1" font-family="system-ui,sans-serif" font-size="11">Teams</text>
+</svg>

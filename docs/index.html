@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="doc_title">Conector Microsoft 365 (Graph API) — Ruvic</title>
+  <link rel="stylesheet" href="assets/ruvic.css">
+</head>
+<body>
+  <main class="ruvic-container">
+    <h1 data-i18n="guide_title">Microsoft 365 (Graph API)</h1>
+    <p class="guide-updated">{{ULTIMA_ACTUALIZACION}}</p>
+
+    <nav class="ruvic-toc" aria-label="Índice">
+      <p data-i18n="toc_title"><strong>Contenido</strong></p>
+      <ol>
+        <li><a href="#que-es" data-i18n="toc.que_es">¿Qué es y para qué sirve?</a></li>
+        <li><a href="#prerrequisitos" data-i18n="toc.prerrequisitos">Prerrequisitos</a></li>
+        <li><a href="#configuracion-fabricante" data-i18n="toc.configuracion_fabricante">Configuración en el fabricante</a></li>
+        <li><a href="#permisos" data-i18n="toc.permisos">Permisos requeridos</a></li>
+        <li><a href="#configuracion-ruvic" data-i18n="toc.configuracion_ruvic">Configuración en Ruvic</a></li>
+        <li><a href="#verificacion" data-i18n="toc.verificacion">Verificación</a></li>
+        <li><a href="#solucion-problemas" data-i18n="toc.solucion_problemas">Solución de problemas</a></li>
+        <li><a href="#faq-seguridad" data-i18n="toc.faq_seguridad">Preguntas frecuentes y notas de seguridad</a></li>
+      </ol>
+    </nav>
+
+    <section>
+      <h2 id="que-es" data-i18n="section.que_es">¿Qué es y para qué sirve?</h2>
+      <p data-i18n="section.que_es.body">El conector Microsoft 365 permite que el agente de Ruvic opere sobre Microsoft Graph: leer y enviar correo de Outlook, leer y escribir archivos en OneDrive (incluido Excel), enviar mensajes y crear reuniones en Teams, y suscribirse a notificaciones push. Librería: msgraph-client (Dgirto/msgraph-Robin).</p>
+      <p data-i18n="section.que_es.ops">Operaciones soportadas:</p>
+      <table>
+        <thead>
+          <tr>
+            <th data-i18n="table.operacion">Operación</th>
+            <th data-i18n="table.que_hace">Qué hace</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>email.read</code></td><td data-i18n="op.email.read">Lee correos de un buzón (filtros, adjuntos)</td></tr>
+          <tr><td><code>email.send</code></td><td data-i18n="op.email.send">Envía correo desde un buzón de la organización</td></tr>
+          <tr><td><code>drive.read</code></td><td data-i18n="op.drive.read">Lista y descarga archivos de OneDrive / lee rangos de Excel</td></tr>
+          <tr><td><code>drive.write</code></td><td data-i18n="op.drive.write">Sube archivos y escribe celdas o filas en Excel</td></tr>
+          <tr><td><code>teams.message</code></td><td data-i18n="op.teams.message">Envía mensajes a un canal o chat</td></tr>
+          <tr><td><code>teams.meeting</code></td><td data-i18n="op.teams.meeting">Crea reuniones en línea</td></tr>
+          <tr><td><code>webhooks.subscribe</code></td><td data-i18n="op.webhooks.subscribe">Crea, renueva o elimina suscripciones de Graph</td></tr>
+        </tbody>
+      </table>
+      <p class="callout callout-info"><strong data-i18n="que.es.callout.title">Aplicación, no usuario interactivo</strong> <span data-i18n="que.es.callout.body">Usa el flujo client credentials de Entra ID (aplicación). No hay pantalla de “iniciar sesión con Microsoft” en cada ejecución.</span></p>
+    </section>
+
+    <section>
+      <h2 id="prerrequisitos" data-i18n="section.prerrequisitos">Prerrequisitos</h2>
+      <ul>
+        <li data-i18n="prereq.1">Un inquilino de Microsoft 365 / Entra ID y permiso de administrador para registrar aplicaciones y otorgar consentimiento.</li>
+        <li data-i18n="prereq.2">Los buzones, OneDrive o sites que el agente vaya a usar deben existir en ese inquilino.</li>
+        <li data-i18n="prereq.3">En Ruvic: Settings → Conectores → Microsoft 365 (Graph API).</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 id="configuracion-fabricante" data-i18n="section.configuracion_fabricante">Configuración en el fabricante</h2>
+      <p data-i18n="fab.intro">Registra una aplicación en Azure / Entra ID, crea un secreto y concede permisos de aplicación de Microsoft Graph con consentimiento de administrador.</p>
+      <p><img src="assets/img/azure-app.svg" alt="" width="720" height="280" data-i18n-alt="img.azure.alt"></p>
+      <ol class="ruvic-steps">
+        <li><strong data-i18n="fab.s1.label">Registrar la aplicación:</strong> <span data-i18n="fab.s1.body">En Azure Portal → Microsoft Entra ID → App registrations → New registration. Nombre p. ej. Ruvic Graph. Tipo de cuenta: Accounts in this organizational directory only.</span></li>
+        <li><strong data-i18n="fab.s2.label">Anotar IDs:</strong> <span data-i18n="fab.s2.body">En Overview copia Application (client) ID y Directory (tenant) ID.</span></li>
+        <li><strong data-i18n="fab.s3.label">Crear un secreto:</strong> <span data-i18n="fab.s3.body">Certificates &amp; secrets → New client secret. Copia el Value (solo se muestra una vez). No copies el Secret ID.</span></li>
+        <li><strong data-i18n="fab.s4.label">Permisos de Graph:</strong> <span data-i18n="fab.s4.body">API permissions → Add a permission → Microsoft Graph → Application permissions. Añade los de la tabla de Permisos. Luego Grant admin consent.</span></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2 id="permisos" data-i18n="section.permisos">Permisos requeridos</h2>
+      <p data-i18n="perm.intro">Permisos de aplicación (no delegated). Concede solo los que vaya a usar el agente. Todos requieren admin consent en el inquilino.</p>
+      <table>
+        <thead>
+          <tr>
+            <th data-i18n="table.permiso">Permiso</th>
+            <th data-i18n="table.modulo">Módulo</th>
+            <th data-i18n="table.para_que">Para qué sirve</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>Mail.Read</code></td><td>EmailClient</td><td data-i18n="perm.mail.read">Leer correos de cualquier buzón</td></tr>
+          <tr><td><code>Mail.Send</code></td><td>EmailSender</td><td data-i18n="perm.mail.send">Enviar correos desde cualquier buzón</td></tr>
+          <tr><td><code>Files.Read.All</code></td><td>DriveClient</td><td data-i18n="perm.files.read">Leer archivos de OneDrive/SharePoint</td></tr>
+          <tr><td><code>Files.ReadWrite.All</code></td><td>DriveWriter</td><td data-i18n="perm.files.write">Escribir archivos en OneDrive/SharePoint</td></tr>
+          <tr><td><code>Team.ReadBasic.All</code></td><td>TeamsClient</td><td data-i18n="perm.team.read">Listar equipos de la organización</td></tr>
+          <tr><td><code>Channel.ReadBasic.All</code></td><td>TeamsClient</td><td data-i18n="perm.channel.read">Listar canales de un equipo</td></tr>
+          <tr><td><code>ChannelMessage.Read.All</code></td><td>TeamsClient</td><td data-i18n="perm.channelmsg.read">Leer mensajes de canales</td></tr>
+          <tr><td><code>ChannelMessage.Send</code></td><td>TeamsClient</td><td data-i18n="perm.channelmsg.send">Enviar mensajes a canales</td></tr>
+          <tr><td><code>Chat.ReadWrite.All</code></td><td>TeamsClient</td><td data-i18n="perm.chat">Mensajes directos y leer chats</td></tr>
+          <tr><td><code>OnlineMeetings.ReadWrite.All</code></td><td>TeamsClient</td><td data-i18n="perm.meetings">Crear y cancelar reuniones de Teams</td></tr>
+          <tr><td><code>User.Read.All</code></td><td>GraphClient</td><td data-i18n="perm.users">Listar usuarios de la organización</td></tr>
+          <tr><td><code>Organization.Read.All</code></td><td>test_connection</td><td data-i18n="perm.org">Probar conexión (GET /organization)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2 id="configuracion-ruvic" data-i18n="section.configuracion_ruvic">Configuración en Ruvic</h2>
+      <ol class="ruvic-steps">
+        <li><strong data-i18n="ruvic.s1.label">Abrir el conector:</strong> <span data-i18n="ruvic.s1.body">Settings → Conectores → Microsoft 365 (Graph API).</span></li>
+        <li><strong data-i18n="ruvic.s2.label">Modo de autenticación:</strong> <span data-i18n="ruvic.s2.body">Aplicación de Azure (client credentials).</span></li>
+        <li><strong data-i18n="ruvic.s3.label">Pegar credenciales:</strong> <span data-i18n="ruvic.s3.body">Client ID, Client Secret y Tenant ID. Opcional: buzón por defecto (robot@empresa.com).</span></li>
+        <li><strong data-i18n="ruvic.s4.label">Variables en runtime:</strong> <span data-i18n="ruvic.s4.body">RUVIC_MSGRAPH_CLIENT_ID, RUVIC_MSGRAPH_CLIENT_SECRET, RUVIC_MSGRAPH_TENANT_ID y RUVIC_MSGRAPH_DEFAULT_MAILBOX.</span></li>
+      </ol>
+    </section>
+
+    <section>
+      <h2 id="verificacion" data-i18n="section.verificacion">Verificación</h2>
+      <p data-i18n="ver.body">Pulsa Probar conexión. Ruvic pide un token de aplicación y consulta GET /v1.0/organization. Si responde el nombre del inquilino, las credenciales son válidas. Si el token se obtiene pero GET /organization devuelve 403, concede Organization.Read.All o Directory.Read.All.</p>
+      <p data-i18n="ver.install">La librería se instala con:</p>
+      <pre><code>pip install git+https://github.com/Dgirto/msgraph-Robin.git</code></pre>
+      <p data-i18n="ver.subdir">Este repo no usa #subdirectory=lib: el paquete está en la raíz.</p>
+    </section>
+
+    <section>
+      <h2 id="solucion-problemas" data-i18n="section.solucion_problemas">Solución de problemas</h2>
+      <p><strong data-i18n="tr.secret.title">invalid_client / secret</strong></p>
+      <p data-i18n="tr.secret.body">El secreto expiró o se copió el Secret ID en lugar del Value.</p>
+      <p><strong data-i18n="tr.aad.title">unauthorized_client / AADSTS700016</strong></p>
+      <p data-i18n="tr.aad.body">Client ID o Tenant ID incorrectos.</p>
+      <p><strong data-i18n="tr.priv.title">403 Insufficient privileges</strong></p>
+      <p data-i18n="tr.priv.body">Faltan permisos de aplicación o no se otorgó admin consent.</p>
+      <p><strong data-i18n="tr.mbox.title">Mailbox not found</strong></p>
+      <p data-i18n="tr.mbox.body">El buzón no existe o la app no tiene Mail.Read / Mail.Send sobre ese usuario.</p>
+      <p><strong data-i18n="tr.imp.title">ImportError msgraph_client</strong></p>
+      <p data-i18n="tr.imp.body">Reinstala con la URL de GitHub (sin lib/).</p>
+    </section>
+
+    <section>
+      <h2 id="faq-seguridad" data-i18n="section.faq_seguridad">Preguntas frecuentes y notas de seguridad</h2>
+      <p><strong data-i18n="faq.1.q">¿Por qué no OAuth de usuario?</strong></p>
+      <p data-i18n="faq.1.a">Este conector está pensado para automatizaciones de servicio (client credentials). No guarda refresh tokens de un usuario final.</p>
+      <p><strong data-i18n="faq.2.q">¿El secreto se muestra en Settings?</strong></p>
+      <p data-i18n="faq.2.a">No: se guarda como secreto y solo indica si está definido.</p>
+      <p><strong data-i18n="faq.3.q">¿Hay que pegar el client_secret en el código del agente?</strong></p>
+      <p data-i18n="faq.3.a">Nunca. El agente lee RUVIC_MSGRAPH_CLIENT_SECRET del entorno. GraphAuth se instancia con os.environ, no con literales.</p>
+      <p><strong data-i18n="faq.4.q">¿El Incoming Webhook de Teams usa estas credenciales?</strong></p>
+      <p data-i18n="faq.4.a">No. send_webhook_message usa la URL del conector Incoming Webhook del canal y no requiere permisos de Graph.</p>
+    </section>
+  </main>
+
+  <script>
+    window.I18N = {
+      es: {
+        doc_title: "Conector Microsoft 365 (Graph API) — Ruvic",
+        toc_title: "Contenido",
+        "toc.que_es": "¿Qué es y para qué sirve?",
+        "toc.prerrequisitos": "Prerrequisitos",
+        "toc.configuracion_fabricante": "Configuración en el fabricante",
+        "toc.permisos": "Permisos requeridos",
+        "toc.configuracion_ruvic": "Configuración en Ruvic",
+        "toc.verificacion": "Verificación",
+        "toc.solucion_problemas": "Solución de problemas",
+        "toc.faq_seguridad": "Preguntas frecuentes y notas de seguridad",
+        guide_title: "Microsoft 365 (Graph API)",
+        "section.que_es": "¿Qué es y para qué sirve?",
+        "section.que_es.body": "El conector Microsoft 365 permite que el agente de Ruvic opere sobre Microsoft Graph: leer y enviar correo de Outlook, leer y escribir archivos en OneDrive (incluido Excel), enviar mensajes y crear reuniones en Teams, y suscribirse a notificaciones push. Librería: msgraph-client (Dgirto/msgraph-Robin).",
+        "section.que_es.ops": "Operaciones soportadas:",
+        "table.operacion": "Operación",
+        "table.que_hace": "Qué hace",
+        "op.email.read": "Lee correos de un buzón (filtros, adjuntos)",
+        "op.email.send": "Envía correo desde un buzón de la organización",
+        "op.drive.read": "Lista y descarga archivos de OneDrive / lee rangos de Excel",
+        "op.drive.write": "Sube archivos y escribe celdas o filas en Excel",
+        "op.teams.message": "Envía mensajes a un canal o chat",
+        "op.teams.meeting": "Crea reuniones en línea",
+        "op.webhooks.subscribe": "Crea, renueva o elimina suscripciones de Graph",
+        "que.es.callout.title": "Aplicación, no usuario interactivo",
+        "que.es.callout.body": "Usa el flujo client credentials de Entra ID (aplicación). No hay pantalla de “iniciar sesión con Microsoft” en cada ejecución.",
+        "section.prerrequisitos": "Prerrequisitos",
+        "prereq.1": "Un inquilino de Microsoft 365 / Entra ID y permiso de administrador para registrar aplicaciones y otorgar consentimiento.",
+        "prereq.2": "Los buzones, OneDrive o sites que el agente vaya a usar deben existir en ese inquilino.",
+        "prereq.3": "En Ruvic: Settings → Conectores → Microsoft 365 (Graph API).",
+        "section.configuracion_fabricante": "Configuración en el fabricante",
+        "fab.intro": "Registra una aplicación en Azure / Entra ID, crea un secreto y concede permisos de aplicación de Microsoft Graph con consentimiento de administrador.",
+        "img.azure.alt": "Flujo: registro de app en Azure, credenciales en Ruvic, llamadas a Microsoft Graph (correo, Drive, Teams).",
+        "fab.s1.label": "Registrar la aplicación:",
+        "fab.s1.body": "En Azure Portal → Microsoft Entra ID → App registrations → New registration. Nombre p. ej. Ruvic Graph. Tipo de cuenta: Accounts in this organizational directory only.",
+        "fab.s2.label": "Anotar IDs:",
+        "fab.s2.body": "En Overview copia Application (client) ID y Directory (tenant) ID.",
+        "fab.s3.label": "Crear un secreto:",
+        "fab.s3.body": "Certificates & secrets → New client secret. Copia el Value (solo se muestra una vez). No copies el Secret ID.",
+        "fab.s4.label": "Permisos de Graph:",
+        "fab.s4.body": "API permissions → Add a permission → Microsoft Graph → Application permissions. Añade los de la tabla de Permisos. Luego Grant admin consent.",
+        "section.permisos": "Permisos requeridos",
+        "perm.intro": "Permisos de aplicación (no delegated). Concede solo los que vaya a usar el agente. Todos requieren admin consent en el inquilino.",
+        "table.permiso": "Permiso",
+        "table.modulo": "Módulo",
+        "table.para_que": "Para qué sirve",
+        "perm.mail.read": "Leer correos de cualquier buzón",
+        "perm.mail.send": "Enviar correos desde cualquier buzón",
+        "perm.files.read": "Leer archivos de OneDrive/SharePoint",
+        "perm.files.write": "Escribir archivos en OneDrive/SharePoint",
+        "perm.team.read": "Listar equipos de la organización",
+        "perm.channel.read": "Listar canales de un equipo",
+        "perm.channelmsg.read": "Leer mensajes de canales",
+        "perm.channelmsg.send": "Enviar mensajes a canales",
+        "perm.chat": "Mensajes directos y leer chats",
+        "perm.meetings": "Crear y cancelar reuniones de Teams",
+        "perm.users": "Listar usuarios de la organización",
+        "perm.org": "Probar conexión (GET /organization)",
+        "section.configuracion_ruvic": "Configuración en Ruvic",
+        "ruvic.s1.label": "Abrir el conector:",
+        "ruvic.s1.body": "Settings → Conectores → Microsoft 365 (Graph API).",
+        "ruvic.s2.label": "Modo de autenticación:",
+        "ruvic.s2.body": "Aplicación de Azure (client credentials).",
+        "ruvic.s3.label": "Pegar credenciales:",
+        "ruvic.s3.body": "Client ID, Client Secret y Tenant ID. Opcional: buzón por defecto (robot@empresa.com).",
+        "ruvic.s4.label": "Variables en runtime:",
+        "ruvic.s4.body": "RUVIC_MSGRAPH_CLIENT_ID, RUVIC_MSGRAPH_CLIENT_SECRET, RUVIC_MSGRAPH_TENANT_ID y RUVIC_MSGRAPH_DEFAULT_MAILBOX.",
+        "section.verificacion": "Verificación",
+        "ver.body": "Pulsa Probar conexión. Ruvic pide un token de aplicación y consulta GET /v1.0/organization. Si responde el nombre del inquilino, las credenciales son válidas. Si el token se obtiene pero GET /organization devuelve 403, concede Organization.Read.All o Directory.Read.All.",
+        "ver.install": "La librería se instala con:",
+        "ver.subdir": "Este repo no usa #subdirectory=lib: el paquete está en la raíz.",
+        "section.solucion_problemas": "Solución de problemas",
+        "tr.secret.title": "invalid_client / secret",
+        "tr.secret.body": "El secreto expiró o se copió el Secret ID en lugar del Value.",
+        "tr.aad.title": "unauthorized_client / AADSTS700016",
+        "tr.aad.body": "Client ID o Tenant ID incorrectos.",
+        "tr.priv.title": "403 Insufficient privileges",
+        "tr.priv.body": "Faltan permisos de aplicación o no se otorgó admin consent.",
+        "tr.mbox.title": "Mailbox not found",
+        "tr.mbox.body": "El buzón no existe o la app no tiene Mail.Read / Mail.Send sobre ese usuario.",
+        "tr.imp.title": "ImportError msgraph_client",
+        "tr.imp.body": "Reinstala con la URL de GitHub (sin lib/).",
+        "section.faq_seguridad": "Preguntas frecuentes y notas de seguridad",
+        "faq.1.q": "¿Por qué no OAuth de usuario?",
+        "faq.1.a": "Este conector está pensado para automatizaciones de servicio (client credentials). No guarda refresh tokens de un usuario final.",
+        "faq.2.q": "¿El secreto se muestra en Settings?",
+        "faq.2.a": "No: se guarda como secreto y solo indica si está definido.",
+        "faq.3.q": "¿Hay que pegar el client_secret en el código del agente?",
+        "faq.3.a": "Nunca. El agente lee RUVIC_MSGRAPH_CLIENT_SECRET del entorno. GraphAuth se instancia con os.environ, no con literales.",
+        "faq.4.q": "¿El Incoming Webhook de Teams usa estas credenciales?",
+        "faq.4.a": "No. send_webhook_message usa la URL del conector Incoming Webhook del canal y no requiere permisos de Graph."
+      },
+      en: {
+        doc_title: "Microsoft 365 (Graph API) connector — Ruvic",
+        toc_title: "Contents",
+        "toc.que_es": "What it is and what it’s for",
+        "toc.prerrequisitos": "Prerequisites",
+        "toc.configuracion_fabricante": "Vendor / provider setup",
+        "toc.permisos": "Required permissions",
+        "toc.configuracion_ruvic": "Configuration in Ruvic",
+        "toc.verificacion": "Verification",
+        "toc.solucion_problemas": "Troubleshooting",
+        "toc.faq_seguridad": "FAQ and security notes",
+        guide_title: "Microsoft 365 (Graph API)",
+        "section.que_es": "What it is and what it’s for",
+        "section.que_es.body": "The Microsoft 365 connector lets the Ruvic agent call Microsoft Graph: read and send Outlook mail, read and write OneDrive files (including Excel), send Teams messages and create meetings, and subscribe to Graph push notifications. Library: msgraph-client (Dgirto/msgraph-Robin).",
+        "section.que_es.ops": "Supported operations:",
+        "table.operacion": "Operation",
+        "table.que_hace": "What it does",
+        "op.email.read": "Reads mailbox messages (filters, attachments)",
+        "op.email.send": "Sends mail from an organization mailbox",
+        "op.drive.read": "Lists and downloads OneDrive files / reads Excel ranges",
+        "op.drive.write": "Uploads files and writes Excel cells or rows",
+        "op.teams.message": "Sends messages to a channel or chat",
+        "op.teams.meeting": "Creates online meetings",
+        "op.webhooks.subscribe": "Creates, renews, or deletes Graph subscriptions",
+        "que.es.callout.title": "Application, not an interactive user",
+        "que.es.callout.body": "Uses the Entra ID client-credentials flow (application). There is no “sign in with Microsoft” prompt on each run.",
+        "section.prerrequisitos": "Prerequisites",
+        "prereq.1": "A Microsoft 365 / Entra ID tenant and admin rights to register apps and grant consent.",
+        "prereq.2": "Mailboxes, OneDrive, or sites the agent will use must exist in that tenant.",
+        "prereq.3": "In Ruvic: Settings → Connectors → Microsoft 365 (Graph API).",
+        "section.configuracion_fabricante": "Vendor / provider setup",
+        "fab.intro": "Register an app in Azure / Entra ID, create a secret, and grant Microsoft Graph application permissions with admin consent.",
+        "img.azure.alt": "Flow: Azure app registration, credentials in Ruvic, Microsoft Graph calls (mail, Drive, Teams).",
+        "fab.s1.label": "Register the app:",
+        "fab.s1.body": "In Azure Portal → Microsoft Entra ID → App registrations → New registration. Name e.g. Ruvic Graph. Account type: Accounts in this organizational directory only.",
+        "fab.s2.label": "Copy IDs:",
+        "fab.s2.body": "On Overview copy Application (client) ID and Directory (tenant) ID.",
+        "fab.s3.label": "Create a secret:",
+        "fab.s3.body": "Certificates & secrets → New client secret. Copy the Value (shown once). Do not copy the Secret ID.",
+        "fab.s4.label": "Graph permissions:",
+        "fab.s4.body": "API permissions → Add a permission → Microsoft Graph → Application permissions. Add the ones in the Permissions table. Then Grant admin consent.",
+        "section.permisos": "Required permissions",
+        "perm.intro": "Application permissions (not delegated). Grant only what the agent will use. All require admin consent in the tenant.",
+        "table.permiso": "Permission",
+        "table.modulo": "Module",
+        "table.para_que": "What it is for",
+        "perm.mail.read": "Read mail from any mailbox",
+        "perm.mail.send": "Send mail from any mailbox",
+        "perm.files.read": "Read OneDrive/SharePoint files",
+        "perm.files.write": "Write OneDrive/SharePoint files",
+        "perm.team.read": "List teams in the organization",
+        "perm.channel.read": "List channels in a team",
+        "perm.channelmsg.read": "Read channel messages",
+        "perm.channelmsg.send": "Send channel messages",
+        "perm.chat": "Direct messages and read chats",
+        "perm.meetings": "Create and cancel Teams meetings",
+        "perm.users": "List users in the organization",
+        "perm.org": "Connection test (GET /organization)",
+        "section.configuracion_ruvic": "Configuration in Ruvic",
+        "ruvic.s1.label": "Open the connector:",
+        "ruvic.s1.body": "Settings → Connectors → Microsoft 365 (Graph API).",
+        "ruvic.s2.label": "Authentication mode:",
+        "ruvic.s2.body": "Azure application (client credentials).",
+        "ruvic.s3.label": "Paste credentials:",
+        "ruvic.s3.body": "Client ID, Client Secret, and Tenant ID. Optional: default mailbox (robot@empresa.com).",
+        "ruvic.s4.label": "Runtime variables:",
+        "ruvic.s4.body": "RUVIC_MSGRAPH_CLIENT_ID, RUVIC_MSGRAPH_CLIENT_SECRET, RUVIC_MSGRAPH_TENANT_ID, and RUVIC_MSGRAPH_DEFAULT_MAILBOX.",
+        "section.verificacion": "Verification",
+        "ver.body": "Click Test connection. Ruvic acquires an application token and calls GET /v1.0/organization. If the tenant name comes back, credentials are valid. If the token works but GET /organization returns 403, grant Organization.Read.All or Directory.Read.All.",
+        "ver.install": "Install the library with:",
+        "ver.subdir": "This repo does not use #subdirectory=lib: the package lives at the repository root.",
+        "section.solucion_problemas": "Troubleshooting",
+        "tr.secret.title": "invalid_client / secret",
+        "tr.secret.body": "The secret expired or you copied the Secret ID instead of the Value.",
+        "tr.aad.title": "unauthorized_client / AADSTS700016",
+        "tr.aad.body": "Client ID or Tenant ID is wrong.",
+        "tr.priv.title": "403 Insufficient privileges",
+        "tr.priv.body": "Missing application permissions or admin consent was not granted.",
+        "tr.mbox.title": "Mailbox not found",
+        "tr.mbox.body": "The mailbox does not exist, or the app lacks Mail.Read / Mail.Send on that user.",
+        "tr.imp.title": "ImportError msgraph_client",
+        "tr.imp.body": "Reinstall with the GitHub URL (no lib/).",
+        "section.faq_seguridad": "FAQ and security notes",
+        "faq.1.q": "Why not user OAuth?",
+        "faq.1.a": "This connector is for service automations (client credentials). It does not store end-user refresh tokens.",
+        "faq.2.q": "Is the secret shown in Settings?",
+        "faq.2.a": "No: it is stored as a secret and Settings only shows whether it is set.",
+        "faq.3.q": "Should the agent hardcode the client_secret?",
+        "faq.3.a": "Never. The agent reads RUVIC_MSGRAPH_CLIENT_SECRET from the environment. Instantiate GraphAuth with os.environ, not literals.",
+        "faq.4.q": "Does the Teams Incoming Webhook use these credentials?",
+        "faq.4.a": "No. send_webhook_message uses the channel Incoming Webhook URL and does not need Graph permissions."
+      }
+    };
+  </script>
+</body>
+</html>
